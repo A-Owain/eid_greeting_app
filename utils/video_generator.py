@@ -1,4 +1,5 @@
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.VideoClip import TextClip, CompositeVideoClip
 import arabic_reshaper
 from bidi.algorithm import get_display
 
