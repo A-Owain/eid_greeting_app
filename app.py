@@ -6,7 +6,7 @@ import tempfile
 import os
 
 st.set_page_config(page_title="🎥 Eid Greeting Video Generator", layout="centered")
-st.title("🎉 Eid Greeting Video Generator")
+st.title("🎉 Eid Greeting Video Generator") # update
 
 name = st.text_input("Enter Your Name | ادخل اسمك", max_chars=30)
 position = st.text_input("Position (Optional) | المسمى الوظيفي (اختياري)", max_chars=30)
