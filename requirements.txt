@@ -1,0 +1,5 @@
+streamlit
+moviepy
+arabic-reshaper
+python-bidi
+pillow
