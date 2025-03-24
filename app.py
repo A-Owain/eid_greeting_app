@@ -18,11 +18,11 @@ if generate and name and position:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmpfile:
             output_path = tmpfile.name
             generate_greeting_video(
-                name=name,
-                position=position,
-                background_path="assets/eid-background.mp4",
+                name="عيد سعيد 🎉",
+                output_path="greeting.mp4",
                 font_path="fonts/NotoSansArabic-SemiBold.ttf",
-                output_path=output_path,
+                video_path="assets/eid-background.mp4"
             )
+
             st.success("✅ Video generated successfully!")
             st.video(output_path)
