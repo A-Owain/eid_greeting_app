@@ -1,44 +1,28 @@
 import streamlit as st
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
-import arabic_reshaper
-from bidi.algorithm import get_display
+from utils.video_generator import generate_greeting_video
 import tempfile
 import os
 
-# === Settings ===
-FONT_PATH = "NotoSansArabic-SemiBold.ttf"
-VIDEO_PATH = "eid-background.mp4"
-OUTPUT_PATH = "output.mp4"
+# Page config
+st.set_page_config(page_title="🎥 Eid Greeting Generator", layout="centered")
 
-# === Inputs ===
-name = st.text_input("Enter name", "Paul Melotto")
-position = st.text_input("Enter position", "CEO")
+# UI
+st.title("🎉 Eid Greeting Video Generator")
 
-if st.button("Generate Greeting Video"):
-    reshaped_name = get_display(arabic_reshaper.reshape(name))
-    reshaped_position = get_display(arabic_reshaper.reshape(position))
+name = st.text_input("Employee Name")
+position = st.text_input("Employee Position")
+generate = st.button("Generate Greeting Video")
 
-    clip = VideoFileClip(VIDEO_PATH)
-
-    name_clip = (
-        TextClip(reshaped_name, fontsize=90, color="red", font=FONT_PATH)
-        .set_start(1.5)
-        .set_duration(clip.duration - 1.5)
-        .fadein(1.5)
-        .set_position(("center", clip.h * 0.78))
-    )
-
-    pos_clip = (
-        TextClip(reshaped_position, fontsize=60, color="red", font=FONT_PATH)
-        .set_start(2.0)
-        .set_duration(clip.duration - 2.0)
-        .fadein(1.0)
-        .set_position(("center", clip.h * 0.83))
-    )
-
-    final = CompositeVideoClip([clip, name_clip, pos_clip])
-    final = final.set_audio(clip.audio)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmpfile:
-        final.write_videofile(tmpfile.name, codec="libx264", audio_codec="aac")
-        st.video(tmpfile.name)
+if generate and name and position:
+    with st.spinner("Generating video..."):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmpfile:
+            output_path = tmpfile.name
+            generate_greeting_video(
+                name=name,
+                position=position,
+                background_path="assets/eid-background.mp4",
+                font_path="fonts/NotoSansArabic-SemiBold.ttf",
+                output_path=output_path,
+            )
+            st.success("✅ Video generated successfully!")
+            st.video(output_path)
