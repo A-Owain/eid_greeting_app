@@ -6,7 +6,7 @@ import tempfile
 import os
 
 # === Settings ===
-FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
+FONT_PATH = "NotoSansArabic-SemiBold.ttf"
 VIDEO_PATH = "eid-background.mp4"
 OUTPUT_PATH = "output.mp4"
 
