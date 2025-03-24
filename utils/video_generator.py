@@ -1,22 +1,45 @@
-from moviepy.video.io.VideoFileClip import VideoFileClip
-from moviepy.video.VideoClip import TextClip, CompositeVideoClip
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
+import tempfile
+import os
 
-def generate_greeting_video(name, position, background_path, font_path, output_path):
-    clip = VideoFileClip(background_path)
 
-    # Prepare Arabic text
+def generate_greeting_video(name: str, output_path: str, font_path: str, video_path: str):
+    # Reshape Arabic text for proper display
     reshaped_name = arabic_reshaper.reshape(name)
     bidi_name = get_display(reshaped_name)
 
-    reshaped_pos = arabic_reshaper.reshape(position)
-    bidi_pos = get_display(reshaped_pos)
+    # Create image with text using PIL
+    img = Image.new("RGBA", (2160, 2824), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(font_path, 90)
 
-    # Create text clips
-    name_text = TextClip(bidi_name, fontsize=90, font=font_path, color='red').set_start(1.5).set_duration(clip.duration - 1.5).set_position('center')
-    pos_text = TextClip(bidi_pos, fontsize=60, font=font_path, color='white').set_start(2.5).set_duration(clip.duration - 2.5).set_position(("center", "bottom"))
+    text_width, text_height = draw.textsize(bidi_name, font=font)
+    position = ((2160 - text_width) // 2, 400)
 
-    # Combine clips
-    final = CompositeVideoClip([clip, name_text, pos_text])
-    final.write_videofile(output_path, codec='libx264', audio=True, preset='ultrafast')
+    draw.text(position, bidi_name, font=font, fill="red")
+
+    # Save temporary PNG
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_img:
+        img.save(tmp_img.name, "PNG")
+        tmp_img_path = tmp_img.name
+
+    # Load base video
+    video = VideoFileClip(video_path)
+
+    # Create ImageClip from the PIL image
+    text_overlay = (
+        ImageClip(tmp_img_path)
+        .set_duration(video.duration)
+        .set_start(1.5)
+        .set_position("center")
+    )
+
+    # Composite
+    final = CompositeVideoClip([video, text_overlay])
+    final.write_videofile(output_path, codec="libx264", audio=True)
+
+    # Clean up temp file
+    os.remove(tmp_img_path)
