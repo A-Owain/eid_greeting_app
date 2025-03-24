@@ -1,4 +1,4 @@
-from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+from moviepy.editor import VideoFileClip, CompositeVideoClip, TextClip
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
