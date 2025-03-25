@@ -1,5 +1,5 @@
-streamlit==1.43.2
+streamlit==1.25.0
 moviepy==1.0.3
 arabic-reshaper==3.0.0
 python-bidi==0.4.2
-pillow
+Pillow==9.4.0
