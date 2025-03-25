@@ -1,0 +1,3 @@
+moviepy
+arabic-reshaper
+python-bidi
