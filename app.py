@@ -4,7 +4,7 @@ import os
 from utils.video_generator import generate_greeting_video
 
 # === Paths ===
-FONT_PATH = "fonts/IBMPlexSansArabic-Bold.ttf"
+FONT_PATH = "fonts/NotoSansArabic-Bold.ttf"
 BACKGROUND_PATH = "assets/eid-background.mp4"
 
 # === Verify Assets Exist ===
