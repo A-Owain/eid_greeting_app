@@ -10,7 +10,7 @@ def generate_greeting_video(name, position, background_path, output_path, font_p
 
     # Name clip
     name_clip = (
-        TextClip(reshaped_name, fontsize=90, color="red", font=font_path)
+        TextClip(reshaped_name, fontsize=90, color="red", font=font_path, method="caption")
         .set_start(1.5)
         .set_duration(clip.duration - 1.5)
         .fadein(1.5)
@@ -19,7 +19,7 @@ def generate_greeting_video(name, position, background_path, output_path, font_p
 
     # Position clip
     pos_clip = (
-        TextClip(reshaped_position, fontsize=60, color="red", font=font_path)
+        TextClip(reshaped_position, fontsize=60, color="#ea2f2f", font=font_path, method="caption")
         .set_start(2.0)
         .set_duration(clip.duration - 2.0)
         .fadein(1.0)
