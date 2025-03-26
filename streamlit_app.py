@@ -24,39 +24,38 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-API_URL = "https://eid-video-api.onrender.com/generate-video"
-response = requests.post(API_URL, json={"name": name, "position": position})
-
 name = st.text_input("Enter your name")
 position = st.text_input("Enter your position (optional)")
 
+API_URL = "https://eid-video-api.onrender.com/generate-video"
+
 if st.button("Generate Greeting Video"):
     if not name:
-        st.warning("Please enter a name.")
+        st.warning("Please enter your name.")
         st.stop()
 
-    with st.spinner("Waking up server..."):
-        try:
-            for attempt in range(3):
-                try:
-                    response = requests.post(API_URL, json={"name": name, "position": position})
-                    if response.status_code == 200:
-                        break
-                except:
-                    time.sleep(2)
+    with st.spinner("Waking up the server... please wait!"):
+        success = False
+        for attempt in range(3):
+            try:
+                response = requests.post(API_URL, json={"name": name, "position": position})
+                if response.status_code == 200:
+                    success = True
+                    break
+            except Exception:
+                time.sleep(2)
 
-        except Exception as e:
-            st.error("API error: Unable to connect")
-            st.stop()
-
-    if response.status_code == 200:
-        st.success("✅ Video generated successfully!")
-        video_bytes = response.content
-        st.download_button(
-            label="Download Your Greeting Video",
-            data=video_bytes,
-            file_name=f"eid_greeting_{name.replace(' ', '_')}.mp4",
-            mime="video/mp4"
-        )
+    if not success:
+        st.error("API error: Server not responding.")
     else:
-        st.error(f"API error: {response.status_code}")
+        with open("output.mp4", "wb") as f:
+            f.write(response.content)
+
+        st.success("\u2705 Video generated successfully!")
+        with open("output.mp4", "rb") as video_file:
+            st.download_button(
+                label="Download Your Greeting Video",
+                data=video_file,
+                file_name=f"eid_greeting_{name.replace(' ', '_')}.mp4",
+                mime="video/mp4"
+            )
