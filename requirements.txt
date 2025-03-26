@@ -1,4 +1,4 @@
-streamlit
+flask
 moviepy
 arabic-reshaper
 python-bidi
