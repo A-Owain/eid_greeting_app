@@ -1,4 +1,5 @@
 flask
+gunicorn
 moviepy
 arabic-reshaper
 python-bidi
