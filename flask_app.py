@@ -1,62 +1,56 @@
-from flask import Flask, request, jsonify
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
-import arabic_reshaper
-from bidi.algorithm import get_display
-import uuid
-import os
+import streamlit as st
+import requests
 
-app = Flask(__name__)
+st.set_page_config(page_title="Eid Video Generator", layout="centered")
+st.title("Eid Greeting Video Generator")
 
-VIDEO_PATH = "eid-background.mp4"
-FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
-STATIC_DIR = "static/videos"
-os.makedirs(STATIC_DIR, exist_ok=True)
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #f7f7f7;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .stTextInput>div>div>input {
+        font-size: 16px;
+    }
+    .stDownloadButton>button {
+        background-color: #1a73e8;
+        color: white;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 0.6em 1.2em;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-@app.route("/generate-video", methods=["POST"])
-def generate_video():
-    data = request.get_json()
-    name = data.get("name", "").strip()
-    position = data.get("position", "").strip()
+# Input fields
+name = st.text_input("Enter your name")
+position = st.text_input("Enter your position (optional)")
 
+if st.button("Generate Greeting Video"):
     if not name:
-        return jsonify({"error": "Name is required."}), 400
+        st.warning("Please enter a name.")
+    else:
+        with st.spinner("Generating your video..."):
+            try:
+                # Replace this with your real API endpoint
+                API_URL = "https://eid-video-api.onrender.com/generate-video"
+                payload = {"name": name, "position": position}
+                response = requests.post(API_URL, json=payload)
 
-    # Arabic text reshaping
-    bidi_name = get_display(arabic_reshaper.reshape(name))
-    bidi_position = get_display(arabic_reshaper.reshape(position)) if position else ""
+                if response.status_code == 200:
+                    video_url = response.json().get("url")
 
-    # Create video
-    clip = VideoFileClip(VIDEO_PATH, audio=False)
+                    if video_url:
+                        st.video(video_url)
+                        st.markdown(
+                            f"<a href='{video_url}' download><button style='margin-top:20px'>Download Your Video</button></a>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.error("No video URL returned from API.")
+                else:
+                    st.error(f"API error: {response.status_code}")
 
-    name_clip = (
-        TextClip(bidi_name, font=FONT_PATH, fontsize=90, color='red', method='label')
-        .set_duration(clip.duration - 1.46)
-        .set_start(1.46)
-        .crossfadein(1.5)
-        .set_position(("center", clip.h * 0.78))
-    )
-
-    clips = [clip, name_clip]
-
-    if bidi_position:
-        pos_clip = (
-            TextClip(bidi_position, font=FONT_PATH, fontsize=60, color='red', method='label')
-            .set_duration(clip.duration - 1.60)
-            .set_start(1.60)
-            .crossfadein(1.5)
-            .set_position(("center", clip.h * 0.83))
-        )
-        clips.append(pos_clip)
-
-    final = CompositeVideoClip(clips).set_duration(clip.duration)
-
-    video_id = uuid.uuid4().hex[:10]
-    output_filename = f"eid_greeting_{video_id}.mp4"
-    output_path = os.path.join(STATIC_DIR, output_filename)
-    final.write_videofile(output_path, codec="libx264")
-
-    public_url = f"{request.host_url}static/videos/{output_filename}"
-    return jsonify({"url": public_url})
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+            except Exception as e:
+                st.error(f"Request failed: {e}")
