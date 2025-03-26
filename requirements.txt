@@ -1,8 +1,9 @@
---upgrade pip
---upgrade setuptools
+pip>=23.0
+setuptools>=65.0
+wheel>=0.40.0
 
 flask
 gunicorn
-moviepy
+moviepy==1.0.3
 arabic-reshaper
 python-bidi
