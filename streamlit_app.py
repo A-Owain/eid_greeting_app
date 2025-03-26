@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import time
 
-API_URL = "https://eid-video-api.onrender.com/generate-video"
+API_URL = "https://eid-video-api.onrender.com/generate"  # <-- make sure it matches your backend
 
 st.set_page_config(page_title="Eid Greeting Video Generator", layout="centered")
 st.title("Eid Greeting Video Generator")
