@@ -7,33 +7,37 @@ import uuid
 
 app = Flask(__name__)
 
-VIDEO_PATH = "eid-background.mp4"
 FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
+VIDEO_PATH = "eid-background.mp4"
 
 @app.route("/")
-def index():
+def home():
     return "Eid Video API is running!"
 
-@app.route("/generate-video", methods=[POST])
+@app.route("/generate-video", methods=["POST"])
 def generate_video():
     data = request.get_json()
-    name = data.get("name", "").strip()
-    position = data.get("position", "").strip()
+    name = data.get("name", "")
+    position = data.get("position", "")
 
     if not name:
         return jsonify({"error": "Name is required"}), 400
 
-    try:
-        # Reshape text
-        bidi_name = get_display(arabic_reshaper.reshape(name))
-        bidi_position = get_display(arabic_reshaper.reshape(position)) if position else ""
+    # Prepare text
+    reshaped_name = arabic_reshaper.reshape(name)
+    bidi_name = get_display(reshaped_name)
 
-        # Load base clip
+    bidi_position = ""
+    if position.strip():
+        reshaped_pos = arabic_reshaper.reshape(position)
+        bidi_position = get_display(reshaped_pos)
+
+    # Create video
+    try:
         clip = VideoFileClip(VIDEO_PATH, audio=False)
 
-        # Name text
         name_clip = (
-            TextClip(bidi_name, font=FONT_PATH, fontsize=90, color='red', method='label')
+            TextClip(bidi_name, font=FONT_PATH, fontsize=90, color="red", method="label")
             .set_duration(clip.duration - 1.46)
             .set_start(1.46)
             .crossfadein(1.5)
@@ -42,12 +46,11 @@ def generate_video():
 
         clips = [clip, name_clip]
 
-        # Position text
         if bidi_position:
             pos_clip = (
-                TextClip(bidi_position, font=FONT_PATH, fontsize=60, color='red', method='label')
-                .set_duration(clip.duration - 1.6)
-                .set_start(1.6)
+                TextClip(bidi_position, font=FONT_PATH, fontsize=60, color="red", method="label")
+                .set_duration(clip.duration - 1.60)
+                .set_start(1.60)
                 .crossfadein(1.5)
                 .set_position(("center", clip.h * 0.83))
             )
@@ -55,15 +58,19 @@ def generate_video():
 
         final = CompositeVideoClip(clips).set_duration(clip.duration)
 
-        output_filename = f"output_{uuid.uuid4().hex[:8]}.mp4"
-        final.write_videofile(output_filename, codec="libx264", audio=False)
+        filename = f"eid_greeting_{uuid.uuid4().hex[:6]}.mp4"
+        final.write_videofile(filename, codec="libx264")
 
-        response = send_file(output_filename, mimetype="video/mp4", as_attachment=True)
-        os.remove(output_filename)
-        return response
+        return send_file(filename, as_attachment=True)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        try:
+            if os.path.exists(filename):
+                os.remove(filename)
+        except:
+            pass
 
 if __name__ == "__main__":
     app.run(debug=True)
