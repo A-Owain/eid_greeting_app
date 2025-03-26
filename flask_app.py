@@ -17,7 +17,8 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 def index():
     return "Eid Video API is running!"
 
-@app.route("/generate", methods=[POST])
+
+@app.route('/generate-video', methods=['POST'])
 def generate_video():
     data = request.get_json()
     name = data.get("name")
