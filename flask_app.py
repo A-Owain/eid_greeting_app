@@ -1,74 +1,58 @@
-from flask import Flask, request, send_file, jsonify
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
-import arabic_reshaper
-from bidi.algorithm import get_display
+import streamlit as st
+import requests
+import time
 import os
-import uuid
 
-app = Flask(__name__)
+# Page config
+st.set_page_config(page_title="Eid Greeting Video Generator", layout="centered")
+st.title("Eid Greeting Video Generator")
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #f7f7f7;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .stTextInput>div>div>input {
+        font-size: 16px;
+    }
+    .stDownloadButton>button {
+        background-color: #1a73e8;
+        color: white;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 0.6em 1.2em;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
-VIDEO_PATH = "eid-background.mp4"
+API_URL = "https://eid-video-api.onrender.com/generate-video"
 
-@app.route("/")
-def index():
-    return "Eid Video API is running!"
+name = st.text_input("Enter your name")
+position = st.text_input("Enter your position (optional)")
 
-@app.route("/generate-video", methods=["POST"])
-def generate_video():
+if st.button("Generate Greeting Video"):
+    if not name:
+        st.warning("Please enter a name.")
+        st.stop()
+
+    with st.spinner("Waking up the video server..."):
+        time.sleep(1.5)
+
     try:
-        data = request.get_json()
-        name = data.get("name")
-        position = data.get("position", "")
+        response = requests.post(API_URL, json={"name": name, "position": position})
 
-        if not name:
-            return jsonify({"error": "Name is required."}), 400
-
-        # Arabic reshaping
-        reshaped_name = arabic_reshaper.reshape(name)
-        bidi_name = get_display(reshaped_name)
-
-        bidi_position = ""
-        if position.strip():
-            reshaped_pos = arabic_reshaper.reshape(position)
-            bidi_position = get_display(reshaped_pos)
-
-        # Load base clip
-        clip = VideoFileClip(VIDEO_PATH, audio=False)
-
-        name_clip = (
-            TextClip(bidi_name, font=FONT_PATH, fontsize=90, color='red', method='label')
-            .set_duration(clip.duration - 1.46)
-            .set_start(1.46)
-            .crossfadein(1.5)
-            .set_position(("center", clip.h * 0.78))
-        )
-
-        clips = [clip, name_clip]
-
-        if bidi_position:
-            pos_clip = (
-                TextClip(bidi_position, font=FONT_PATH, fontsize=60, color='red', method='label')
-                .set_duration(clip.duration - 1.60)
-                .set_start(1.60)
-                .crossfadein(1.5)
-                .set_position(("center", clip.h * 0.83))
-            )
-            clips.append(pos_clip)
-
-        final = CompositeVideoClip(clips).set_duration(clip.duration)
-
-        output_file = f"output_{uuid.uuid4().hex[:8]}.mp4"
-        final.write_videofile(output_file, codec='libx264')
-
-        return send_file(output_file, as_attachment=True, download_name=output_file)
-
+        if response.status_code == 200:
+            video_url = response.json().get("video_url")
+            if video_url:
+                st.video(video_url)
+                st.markdown(f"""
+                <a href="{video_url}" download>
+                    <button style="margin-top: 20px; padding: 0.6em 1.2em; background-color: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px;">Download Video</button>
+                </a>
+                """, unsafe_allow_html=True)
+            else:
+                st.error("Video URL not found in response.")
+        else:
+            st.error(f"API error: {response.status_code}")
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        # Clean up
-        if 'output_file' in locals() and os.path.exists(output_file):
-            os.remove(output_file)
-
-if __name__ == "__main__":
-    app.run(debug=True)
+        st.error(f"Request failed: {e}")
