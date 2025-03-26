@@ -1,58 +1,72 @@
-import streamlit as st
-import requests
-import time
+from flask import Flask, request, send_file, jsonify
+from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
+import arabic_reshaper
+from bidi.algorithm import get_display
 import os
+import uuid
 
-# Page config
-st.set_page_config(page_title="Eid Greeting Video Generator", layout="centered")
-st.title("Eid Greeting Video Generator")
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #f7f7f7;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    .stTextInput>div>div>input {
-        font-size: 16px;
-    }
-    .stDownloadButton>button {
-        background-color: #1a73e8;
-        color: white;
-        font-weight: 500;
-        border-radius: 8px;
-        padding: 0.6em 1.2em;
-    }
-</style>
-""", unsafe_allow_html=True)
+app = Flask(__name__)
 
-API_URL = "https://eid-video-api.onrender.com/generate-video"
+VIDEO_PATH = "eid-background.mp4"
+FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
 
-name = st.text_input("Enter your name")
-position = st.text_input("Enter your position (optional)")
+@app.route("/")
+def home():
+    return "✅ Eid Video API is running!"
 
-if st.button("Generate Greeting Video"):
+@app.route("/generate-video", methods=["POST"])
+def generate_video():
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    position = data.get("position", "").strip()
+
     if not name:
-        st.warning("Please enter a name.")
-        st.stop()
+        return jsonify({"error": "Name is required"}), 400
 
-    with st.spinner("Waking up the video server..."):
-        time.sleep(1.5)
+    # Debugging
+    print("🔍 Current directory:", os.getcwd())
+    print("📂 Directory contents:", os.listdir("."))
+    print(f"🎥 Looking for video: {VIDEO_PATH}")
+
+    if not os.path.isfile(VIDEO_PATH):
+        return jsonify({"error": f"Video file not found: {VIDEO_PATH}"}), 500
 
     try:
-        response = requests.post(API_URL, json={"name": name, "position": position})
+        reshaped_name = arabic_reshaper.reshape(name)
+        bidi_name = get_display(reshaped_name)
 
-        if response.status_code == 200:
-            video_url = response.json().get("video_url")
-            if video_url:
-                st.video(video_url)
-                st.markdown(f"""
-                <a href="{video_url}" download>
-                    <button style="margin-top: 20px; padding: 0.6em 1.2em; background-color: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px;">Download Video</button>
-                </a>
-                """, unsafe_allow_html=True)
-            else:
-                st.error("Video URL not found in response.")
-        else:
-            st.error(f"API error: {response.status_code}")
+        reshaped_position = arabic_reshaper.reshape(position) if position else ""
+        bidi_position = get_display(reshaped_position) if position else ""
+
+        clip = VideoFileClip(VIDEO_PATH, audio=False)
+
+        name_clip = (
+            TextClip(bidi_name, font=FONT_PATH, fontsize=90, color='red', method='label')
+            .set_duration(clip.duration - 1.46)
+            .set_start(1.46)
+            .crossfadein(1.5)
+            .set_position(("center", clip.h * 0.78))
+        )
+
+        clips = [clip, name_clip]
+
+        if bidi_position:
+            pos_clip = (
+                TextClip(bidi_position, font=FONT_PATH, fontsize=60, color='red', method='label')
+                .set_duration(clip.duration - 1.60)
+                .set_start(1.60)
+                .crossfadein(1.5)
+                .set_position(("center", clip.h * 0.83))
+            )
+            clips.append(pos_clip)
+
+        final = CompositeVideoClip(clips).set_duration(clip.duration)
+
+        output_filename = f"eid_greeting_{uuid.uuid4().hex[:8]}.mp4"
+        final.write_videofile(output_filename, codec="libx264")
+
+        return send_file(output_filename, mimetype="video/mp4", as_attachment=True)
+
     except Exception as e:
-        st.error(f"Request failed: {e}")
+        print("💥 Exception occurred:", e)
+        return jsonify({"error": "Video generation failed", "details": str(e)}), 500
