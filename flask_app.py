@@ -14,7 +14,7 @@ FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
 def home():
     return "✅ Eid Video API is running!"
 
-@app.route("/generate-video", methods=["POST"])
+@app.route("/generate", methods=["POST"])
 def generate_video():
     data = request.get_json()
     name = data.get("name", "").strip()
