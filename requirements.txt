@@ -1,2 +1,5 @@
-streamlit
-requests
+Flask
+gunicorn
+moviepy
+arabic-reshaper
+python-bidi
