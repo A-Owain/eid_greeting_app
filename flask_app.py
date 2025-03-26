@@ -7,9 +7,6 @@ import uuid
 
 app = Flask(__name__)
 
-FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
-VIDEO_PATH = "eid-background.mp4"
-
 @app.route("/")
 def home():
     return "Eid Video API is running!"
@@ -21,9 +18,8 @@ def generate_video():
     position = data.get("position", "")
 
     if not name:
-        return jsonify({"error": "Name is required"}), 400
+        return jsonify({"error": "Name is required."}), 400
 
-    # Prepare text
     reshaped_name = arabic_reshaper.reshape(name)
     bidi_name = get_display(reshaped_name)
 
@@ -32,45 +28,35 @@ def generate_video():
         reshaped_pos = arabic_reshaper.reshape(position)
         bidi_position = get_display(reshaped_pos)
 
-    # Create video
-    try:
-        clip = VideoFileClip(VIDEO_PATH, audio=False)
+    VIDEO_PATH = "eid-background.mp4"
+    FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
+    OUTPUT_FILE = f"output_{uuid.uuid4().hex[:8]}.mp4"
 
-        name_clip = (
-            TextClip(bidi_name, font=FONT_PATH, fontsize=90, color="red", method="label")
-            .set_duration(clip.duration - 1.46)
-            .set_start(1.46)
+    clip = VideoFileClip(VIDEO_PATH, audio=False)
+
+    name_clip = (
+        TextClip(bidi_name, font=FONT_PATH, fontsize=90, color='red', method='label')
+        .set_duration(clip.duration - 1.46)
+        .set_start(1.46)
+        .crossfadein(1.5)
+        .set_position(("center", clip.h * 0.78))
+    )
+
+    clips = [clip, name_clip]
+
+    if bidi_position:
+        pos_clip = (
+            TextClip(bidi_position, font=FONT_PATH, fontsize=60, color='red', method='label')
+            .set_duration(clip.duration - 1.60)
+            .set_start(1.60)
             .crossfadein(1.5)
-            .set_position(("center", clip.h * 0.78))
+            .set_position(("center", clip.h * 0.83))
         )
+        clips.append(pos_clip)
 
-        clips = [clip, name_clip]
+    final = CompositeVideoClip(clips).set_duration(clip.duration)
+    final.write_videofile(OUTPUT_FILE, codec='libx264')
 
-        if bidi_position:
-            pos_clip = (
-                TextClip(bidi_position, font=FONT_PATH, fontsize=60, color="red", method="label")
-                .set_duration(clip.duration - 1.60)
-                .set_start(1.60)
-                .crossfadein(1.5)
-                .set_position(("center", clip.h * 0.83))
-            )
-            clips.append(pos_clip)
-
-        final = CompositeVideoClip(clips).set_duration(clip.duration)
-
-        filename = f"eid_greeting_{uuid.uuid4().hex[:6]}.mp4"
-        final.write_videofile(filename, codec="libx264")
-
-        return send_file(filename, as_attachment=True)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        try:
-            if os.path.exists(filename):
-                os.remove(filename)
-        except:
-            pass
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    response = send_file(OUTPUT_FILE, as_attachment=True)
+    os.remove(OUTPUT_FILE)
+    return response
