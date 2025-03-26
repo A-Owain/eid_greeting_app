@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, jsonify
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -9,8 +9,8 @@ app = Flask(__name__)
 
 VIDEO_PATH = "eid-background.mp4"
 FONT_PATH = "IBMPlexSansArabic-Bold.ttf"
-OUTPUT_DIR = "generated_videos"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+STATIC_DIR = "static/videos"
+os.makedirs(STATIC_DIR, exist_ok=True)
 
 @app.route("/generate-video", methods=["POST"])
 def generate_video():
@@ -51,10 +51,12 @@ def generate_video():
     final = CompositeVideoClip(clips).set_duration(clip.duration)
 
     video_id = uuid.uuid4().hex[:10]
-    output_path = os.path.join(OUTPUT_DIR, f"eid_greeting_{video_id}.mp4")
+    output_filename = f"eid_greeting_{video_id}.mp4"
+    output_path = os.path.join(STATIC_DIR, output_filename)
     final.write_videofile(output_path, codec="libx264")
 
-    return send_file(output_path, mimetype="video/mp4", as_attachment=True)
+    public_url = f"{request.host_url}static/videos/{output_filename}"
+    return jsonify({"url": public_url})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
