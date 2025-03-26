@@ -24,7 +24,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-API_URL = "https://eid-video-api.onrender.com/generate"
+API_URL = "https://eid-video-api.onrender.com/generate-video"
+response = requests.post(API_URL, json={"name": name, "position": position})
 
 name = st.text_input("Enter your name")
 position = st.text_input("Enter your position (optional)")
