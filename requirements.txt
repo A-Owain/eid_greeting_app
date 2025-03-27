@@ -1,5 +1,4 @@
-flask
+streamlit
 moviepy
-bidi
 arabic-reshaper
-gunicorn
+python-bidi
