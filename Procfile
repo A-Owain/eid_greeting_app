@@ -1,1 +1,2 @@
-web: gunicorn flask_app:app
+#!/usr/bin/env bash
+pip install -r requirements.txt
