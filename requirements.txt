@@ -1,0 +1,5 @@
+flask
+moviepy
+bidi
+arabic-reshaper
+gunicorn
